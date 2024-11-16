@@ -10,6 +10,8 @@
     body {
       font-family: 'Arial', sans-serif;
       background: #f5f5f5;
+      color: #000;
+      transition: background 0.3s, color 0.3s;
     }
     .container {
       max-width: 900px;
@@ -18,6 +20,7 @@
       background: #fff;
       border-radius: 8px;
       box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+      transition: background 0.3s;
     }
     h1 {
       text-align: center;
@@ -35,6 +38,7 @@
       padding: 10px 0;
       overflow: hidden;
       white-space: nowrap;
+      transition: background 0.3s, color 0.3s;
     }
     .ticker span {
       display: inline-block;
@@ -47,6 +51,10 @@
       100% {
         transform: translateX(-100%);
       }
+    }
+    .theme-toggle {
+      margin: 20px auto;
+      text-align: center;
     }
   </style>
 </head>
@@ -72,9 +80,26 @@
     <div class="chart-container">
       <canvas id="soilMoistureChart"></canvas>
     </div>
+
+    <!-- Theme Toggle Button -->
+    <div class="theme-toggle">
+      <button id="toggleTheme" class="btn btn-primary">Switch to Black Theme</button>
+    </div>
   </div>
 
   <script>
+    // Theme toggle functionality
+    const toggleThemeButton = document.getElementById('toggleTheme');
+    toggleThemeButton.addEventListener('click', () => {
+      const isDarkTheme = document.body.classList.toggle('dark-theme');
+      document.body.style.background = isDarkTheme ? '#121212' : '#f5f5f5';
+      document.body.style.color = isDarkTheme ? '#ffffff' : '#000000';
+      document.querySelector('.container').style.background = isDarkTheme ? '#333333' : '#fff';
+      document.querySelector('.ticker').style.background = isDarkTheme ? '#444444' : '#007bff';
+      document.querySelector('.ticker').style.color = isDarkTheme ? '#ffffff' : '#ffffff';
+      toggleThemeButton.textContent = isDarkTheme ? 'Switch to White Theme' : 'Switch to Black Theme';
+    });
+
     const apiKey = "2AMDMTVA7IJPLMEF";
     const channelId = "2388701"; // Your ThingSpeak channel ID
     const apiUrl = `https://api.thingspeak.com/channels/${channelId}/feeds.json?api_key=${apiKey}&results=10`;
