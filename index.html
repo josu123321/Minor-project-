@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>ThingSpeak Dashboard</title>
+  <title>Sensor Dashboard</title>
   <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/bootstrap/5.3.0/css/bootstrap.min.css">
   <style>
@@ -29,9 +29,33 @@
       height: 400px;
       margin: 20px auto;
     }
+    .ticker {
+      background: #007bff;
+      color: white;
+      padding: 10px 0;
+      overflow: hidden;
+      white-space: nowrap;
+    }
+    .ticker span {
+      display: inline-block;
+      animation: move 10s linear infinite;
+    }
+    @keyframes move {
+      0% {
+        transform: translateX(100%);
+      }
+      100% {
+        transform: translateX(-100%);
+      }
+    }
   </style>
 </head>
 <body>
+  <!-- Moving text ticker -->
+  <div class="ticker">
+    <span id="tickerText">Loading latest sensor data...</span>
+  </div>
+
   <div class="container">
     <h1>Sensor Dashboard</h1>
     <div id="readings" class="text-center mb-4">
@@ -55,7 +79,6 @@
     const channelId = "2388701"; // Your ThingSpeak channel ID
     const apiUrl = `https://api.thingspeak.com/channels/${channelId}/feeds.json?api_key=${apiKey}&results=10`;
 
-    // Chart configurations for each dataset
     const temperatureChartConfig = {
       type: 'line',
       data: {
@@ -122,12 +145,10 @@
       }
     };
 
-    // Get canvas contexts
     const temperatureCtx = document.getElementById('temperatureChart').getContext('2d');
     const humidityCtx = document.getElementById('humidityChart').getContext('2d');
     const soilMoistureCtx = document.getElementById('soilMoistureChart').getContext('2d');
 
-    // Create chart instances
     const temperatureChart = new Chart(temperatureCtx, temperatureChartConfig);
     const humidityChart = new Chart(humidityCtx, humidityChartConfig);
     const soilMoistureChart = new Chart(soilMoistureCtx, soilMoistureChartConfig);
@@ -142,9 +163,16 @@
 
         // Update readings
         const latestFeed = feeds[feeds.length - 1];
-        document.getElementById('temperature').textContent = `${latestFeed.field1 || "N/A"} °C`;
-        document.getElementById('humidity').textContent = `${latestFeed.field2 || "N/A"} %`;
-        document.getElementById('soilMoisture').textContent = `${latestFeed.field3 || "N/A"} %`;
+        const temp = latestFeed.field1 || "N/A";
+        const hum = latestFeed.field2 || "N/A";
+        const soil = latestFeed.field3 || "N/A";
+
+        document.getElementById('temperature').textContent = `${temp} °C`;
+        document.getElementById('humidity').textContent = `${hum} %`;
+        document.getElementById('soilMoisture').textContent = `${soil} %`;
+
+        // Update ticker text
+        document.getElementById('tickerText').textContent = `Latest Data - Temperature: ${temp} °C | Humidity: ${hum} % | Soil Moisture: ${soil} %`;
 
         // Update charts
         const labels = feeds.map(feed => new Date(feed.created_at).toLocaleTimeString());
