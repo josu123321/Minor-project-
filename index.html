@@ -33,6 +33,36 @@
       height: 400px;
       margin: 20px auto;
     }
+    .dropdown {
+      text-align: center;
+      margin: 10px auto;
+    }
+    .btn-green {
+      background-color: #217346;
+      color: white;
+      border: none;
+      padding: 10px 20px;
+    }
+    .btn-green:hover {
+      background-color: #1e623b;
+    }
+    .dark-theme {
+      background: #121212;
+      color: #fff;
+    }
+    .dark-theme .container {
+      background: #333;
+    }
+    .dark-theme .dropdown .btn {
+      background-color: #444;
+      color: #fff;
+    }
+    .theme-toggle {
+      margin: 10px 0;
+    }
+    .theme-toggle .btn {
+      margin-bottom: 10px;
+    }
     .ticker {
       background: #007bff;
       color: white;
@@ -71,39 +101,6 @@
         opacity: 0;
       }
     }
-    .theme-toggle {
-      margin: 20px auto;
-      text-align: center;
-    }
-    .download-button {
-      margin-top: 10px;
-    }
-    .btn-green {
-      background-color: #217346;
-      color: white;
-      border: none;
-    }
-    .btn-green:hover {
-      background-color: #1e623b;
-    }
-    .spinner {
-      display: none;
-      margin: 20px auto;
-      text-align: center;
-    }
-    .dark-theme {
-      background: #121212;
-      color: #fff;
-    }
-    .dark-theme .container {
-      background: #333;
-    }
-    .dark-theme .ticker {
-      background: #444;
-    }
-    .dark-theme .real-time-indicator {
-      background: lime;
-    }
     @media (max-width: 768px) {
       .chart-container {
         height: 300px;
@@ -120,28 +117,57 @@
 
   <div class="container">
     <h1>Sensor Dashboard</h1>
+
     <div id="readings" class="text-center mb-4">
       <p><strong>Temperature:</strong> <span id="temperature">Loading...</span></p>
       <p><strong>Humidity:</strong> <span id="humidity">Loading...</span></p>
       <p><strong>Soil Moisture:</strong> <span id="soilMoisture">Loading...</span></p>
     </div>
-    <div class="spinner" id="loadingSpinner">
-      <div class="spinner-border text-primary" role="status">
-        <span class="visually-hidden">Loading...</span>
-      </div>
-    </div>
+
+    <!-- Temperature Chart -->
     <div class="chart-container">
       <canvas id="temperatureChart"></canvas>
     </div>
+    <div class="dropdown">
+      <label for="temperatureCount">Number of Readings:</label>
+      <select id="temperatureCount" class="form-select" style="width: 150px; display: inline-block;">
+        <option value="10" selected>10</option>
+        <option value="25">25</option>
+        <option value="50">50</option>
+        <option value="100">100</option>
+      </select>
+    </div>
+
+    <!-- Humidity Chart -->
     <div class="chart-container">
       <canvas id="humidityChart"></canvas>
     </div>
+    <div class="dropdown">
+      <label for="humidityCount">Number of Readings:</label>
+      <select id="humidityCount" class="form-select" style="width: 150px; display: inline-block;">
+        <option value="10" selected>10</option>
+        <option value="25">25</option>
+        <option value="50">50</option>
+        <option value="100">100</option>
+      </select>
+    </div>
+
+    <!-- Soil Moisture Chart -->
     <div class="chart-container">
       <canvas id="soilMoistureChart"></canvas>
     </div>
+    <div class="dropdown">
+      <label for="soilMoistureCount">Number of Readings:</label>
+      <select id="soilMoistureCount" class="form-select" style="width: 150px; display: inline-block;">
+        <option value="10" selected>10</option>
+        <option value="25">25</option>
+        <option value="50">50</option>
+        <option value="100">100</option>
+      </select>
+    </div>
 
     <!-- Theme Toggle Button -->
-    <div class="theme-toggle">
+    <div class="theme-toggle text-center">
       <button id="toggleTheme" class="btn btn-primary">🌙 Switch to Dark Mode</button>
     </div>
 
@@ -154,19 +180,15 @@
   <script>
     const toggleThemeButton = document.getElementById('toggleTheme');
     const downloadCsvButton = document.getElementById('downloadCsv');
-    const loadingSpinner = document.getElementById('loadingSpinner');
+    const temperatureCount = document.getElementById('temperatureCount');
+    const humidityCount = document.getElementById('humidityCount');
+    const soilMoistureCount = document.getElementById('soilMoistureCount');
+
     const charts = [];
     let sensorData = [];
 
-    toggleThemeButton.addEventListener('click', () => {
-      const isDarkTheme = document.body.classList.toggle('dark-theme');
-      toggleThemeButton.textContent = isDarkTheme ? '🌞 Switch to Light Mode' : '🌙 Switch to Dark Mode';
-      updateChartColors(isDarkTheme ? '#ffffff' : '#000000');
-    });
-
     const apiKey = "2AMDMTVA7IJPLMEF";
     const channelId = "2388701";
-    const apiUrl = `https://api.thingspeak.com/channels/${channelId}/feeds.json?api_key=${apiKey}&results=10`;
 
     const createChartConfig = (label, borderColor, backgroundColor) => ({
       type: 'line',
@@ -184,139 +206,91 @@
       options: {
         responsive: true,
         scales: {
-          x: { 
-            title: { display: true, text: 'Time', color: '#000' },
-            ticks: { color: '#000' }
-          },
-          y: { 
-            title: { display: true, text: label, color: '#000' },
-            ticks: { color: '#000' }
-          }
+          x: { title: { display: true, text: 'Time', color: '#000' }, ticks: { color: '#000' } },
+          y: { title: { display: true, text: label, color: '#000' }, ticks: { color: '#000' } }
         },
         plugins: {
           legend: { labels: { color: '#000' } },
           zoom: {
-            pan: {
-              enabled: true,
-              mode: 'x'
-            },
-            zoom: {
-              wheel: {
-                enabled: true
-              },
-              pinch: {
-                enabled: true
-              },
-              mode: 'x'
-            }
-          },
-          tooltip: {
-            callbacks: {
-              label: function(context) {
-                return `${context.dataset.label}: ${context.parsed.y}`;
-              }
-            }
+            pan: { enabled: true, mode: 'x' },
+            zoom: { wheel: { enabled: true }, pinch: { enabled: true }, mode: 'x' }
           }
         }
       }
     });
 
-    const temperatureChart = new Chart(
-      document.getElementById('temperatureChart').getContext('2d'),
-      createChartConfig('Temperature (°C)', 'rgba(255, 99, 132, 1)', 'rgba(255, 99, 132, 0.2)')
-    );
-    charts.push(temperatureChart);
+    const temperatureChart = new Chart(document.getElementById('temperatureChart').getContext('2d'), createChartConfig('Temperature (°C)', 'rgba(255, 99, 132, 1)', 'rgba(255, 99, 132, 0.2)'));
+    const humidityChart = new Chart(document.getElementById('humidityChart').getContext('2d'), createChartConfig('Humidity (%)', 'rgba(54, 162, 235, 1)', 'rgba(54, 162, 235, 0.2)'));
+    const soilMoistureChart = new Chart(document.getElementById('soilMoistureChart').getContext('2d'), createChartConfig('Soil Moisture (%)', 'rgba(75, 192, 192, 1)', 'rgba(75, 192, 192, 0.2)'));
 
-    const humidityChart = new Chart(
-      document.getElementById('humidityChart').getContext('2d'),
-      createChartConfig('Humidity (%)', 'rgba(54, 162, 235, 1)', 'rgba(54, 162, 235, 0.2)')
-    );
-    charts.push(humidityChart);
+    charts.push(temperatureChart, humidityChart, soilMoistureChart);
 
-    const soilMoistureChart = new Chart(
-      document.getElementById('soilMoistureChart').getContext('2d'),
-      createChartConfig('Soil Moisture (%)', 'rgba(75, 192, 192, 1)', 'rgba(75, 192, 192, 0.2)')
-    );
-    charts.push(soilMoistureChart);
-
-    async function fetchData() {
+    async function fetchData(count, chart, fieldIndex, updateReadings = false) {
+      const apiUrl = `https://api.thingspeak.com/channels/${channelId}/feeds.json?api_key=${apiKey}&results=${count}`;
       try {
-        loadingSpinner.style.display = 'block';
         const response = await fetch(apiUrl);
-        if (!response.ok) throw new Error(`HTTP error! Status: ${response.status}`);
-        
         const data = await response.json();
         const feeds = data.feeds;
         sensorData = feeds;
 
-        const latestFeed = feeds[feeds.length - 1] || {};
-        const temp = latestFeed.field1 || "N/A";
-        const hum = latestFeed.field2 || "N/A";
-        const soil = latestFeed.field3 || "N/A";
-
-        document.getElementById('temperature').textContent = `${temp} °C`;
-        document.getElementById('humidity').textContent = `${hum} %`;
-        document.getElementById('soilMoisture').textContent = `${soil} %`;
-
-        document.getElementById('tickerText').textContent = `Latest Data - Temperature: ${temp} °C | Humidity: ${hum} % | Soil Moisture: ${soil} %`;
-
         const labels = feeds.map(feed => new Date(feed.created_at).toLocaleTimeString());
-        temperatureChart.data.labels = labels;
-        temperatureChart.data.datasets[0].data = feeds.map(feed => parseFloat(feed.field1 || 0));
-        humidityChart.data.labels = labels;
-        humidityChart.data.datasets[0].data = feeds.map(feed => parseFloat(feed.field2 || 0));
-        soilMoistureChart.data.labels = labels;
-        soilMoistureChart.data.datasets[0].data = feeds.map(feed => parseFloat(feed.field3 || 0));
+        const dataPoints = feeds.map(feed => parseFloat(feed[`field${fieldIndex}`] || 0));
 
-        temperatureChart.update();
-        humidityChart.update();
-        soilMoistureChart.update();
+        chart.data.labels = labels;
+        chart.data.datasets[0].data = dataPoints;
+        chart.update();
+
+        if (updateReadings) {
+          const latestFeed = feeds[feeds.length - 1] || {};
+          document.getElementById('temperature').textContent = `${latestFeed.field1 || 'N/A'} °C`;
+          document.getElementById('humidity').textContent = `${latestFeed.field2 || 'N/A'} %`;
+          document.getElementById('soilMoisture').textContent = `${latestFeed.field3 || 'N/A'} %`;
+          document.getElementById('tickerText').textContent = `Latest Data - Temperature: ${latestFeed.field1 || 'N/A'} °C | Humidity: ${latestFeed.field2 || 'N/A'} % | Soil Moisture: ${latestFeed.field3 || 'N/A'} %`;
+        }
       } catch (error) {
         console.error("Error fetching data:", error);
-      } finally {
-        loadingSpinner.style.display = 'none';
       }
     }
 
-    function downloadCsv() {
-      const headers = ['Time', 'Temperature (°C)', 'Humidity (%)', 'Soil Moisture (%)'];
-      const rows = sensorData.map(feed => [
-        feed.created_at,
-        feed.field1 || "N/A",
-        feed.field2 || "N/A",
-        feed.field3 || "N/A"
-      ]);
+    temperatureCount.addEventListener('change', () => fetchData(temperatureCount.value, temperatureChart, 1, true));
+    humidityCount.addEventListener('change', () => fetchData(humidityCount.value, humidityChart, 2, true));
+    soilMoistureCount.addEventListener('change', () => fetchData(soilMoistureCount.value, soilMoistureChart, 3, true));
 
-      const csvContent = [headers, ...rows]
-        .map(row => row.join(","))
-        .join("\n");
-
-      const blob = new Blob([csvContent], { type: 'text/csv' });
-      const url = URL.createObjectURL(blob);
-
-      const link = document.createElement('a');
-      link.href = url;
-      link.download = 'sensor_readings.csv';
-      link.click();
-
-      URL.revokeObjectURL(url); // Release memory
-    }
-
-    downloadCsvButton.addEventListener('click', downloadCsv);
-
-    function updateChartColors(textColor) {
+    toggleThemeButton.addEventListener('click', () => {
+      const isDarkTheme = document.body.classList.toggle('dark-theme');
+      toggleThemeButton.textContent = isDarkTheme ? '🌞 Switch to Light Mode' : '🌙 Switch to Dark Mode';
       charts.forEach(chart => {
-        chart.options.scales.x.title.color = textColor;
-        chart.options.scales.x.ticks.color = textColor;
-        chart.options.scales.y.title.color = textColor;
-        chart.options.scales.y.ticks.color = textColor;
-        chart.options.plugins.legend.labels.color = textColor;
+        chart.options.scales.x.title.color = isDarkTheme ? '#fff' : '#000';
+        chart.options.scales.x.ticks.color = isDarkTheme ? '#fff' : '#000';
+        chart.options.scales.y.title.color = isDarkTheme ? '#fff' : '#000';
+        chart.options.scales.y.ticks.color = isDarkTheme ? '#fff' : '#000';
+        chart.options.plugins.legend.labels.color = isDarkTheme ? '#fff' : '#000';
         chart.update();
       });
-    }
+    });
 
-    fetchData();
-    setInterval(fetchData, 15000);
+    downloadCsvButton.addEventListener('click', () => {
+      const headers = ['Time', 'Temperature (°C)', 'Humidity (%)', 'Soil Moisture (%)'];
+      const rows = sensorData.map(feed => [feed.created_at, feed.field1 || 'N/A', feed.field2 || 'N/A', feed.field3 || 'N/A']);
+      const csvContent = [headers, ...rows].map(row => row.join(',')).join('\n');
+      const blob = new Blob([csvContent], { type: 'text/csv' });
+      const url = URL.createObjectURL(blob);
+      const link = document.createElement('a');
+      link.href = url;
+      link.download = 'sensor_data.csv';
+      link.click();
+      URL.revokeObjectURL(url);
+    });
+
+    fetchData(10, temperatureChart, 1, true);
+    fetchData(10, humidityChart, 2, true);
+    fetchData(10, soilMoistureChart, 3, true);
+
+    setInterval(() => {
+      fetchData(temperatureCount.value, temperatureChart, 1, true);
+      fetchData(humidityCount.value, humidityChart, 2, true);
+      fetchData(soilMoistureCount.value, soilMoistureChart, 3, true);
+    }, 1000);
   </script>
 </body>
 </html>
